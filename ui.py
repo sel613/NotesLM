@@ -1,7 +1,7 @@
 import streamlit as st
-from ran_demo.NotesLM.pdf_processor import extract_text_from_pdf, convert_pdf_to_images
-from ran_demo.NotesLM.youtube_processor import get_video_transcript
-from ran_demo.NotesLM.gemini_integration import chat_with_notes, generate_quiz
+from pdf_processor import extract_text_from_pdf, convert_pdf_to_images
+from youtube_processor import get_video_transcript
+from gemini_integration import chat_with_notes, generate_quiz
 import re 
 
 st.title("Smart Notes App with Gemini")
