@@ -4,7 +4,17 @@ from youtube_processor import get_video_transcript
 from gemini_integration import chat_with_notes, generate_quiz
 import re 
 
-st.title("Smart Notes App with Gemini")
+st.title("📚 Welcome to NoteDen - Smart Learning Companion ✨")
+
+
+def clear_all_state_except_notes():
+    # Clears chat, quiz, and dynamic keys like q1_selected, q2_selected...
+    st.session_state.chat_history = []
+    st.session_state.generated_quiz = None
+
+    keys_to_delete = [k for k in st.session_state.keys() if re.match(r"q\d+_selected", k) or re.match(r"q\d+_option", k)]
+    for k in keys_to_delete:
+        del st.session_state[k]
 
 # Initialize session state for notes and chat history
 if 'notes' not in st.session_state:
@@ -37,7 +47,7 @@ if st.sidebar.button("Process Notes"):
             images = convert_pdf_to_images(pdf_file, max_pages=10)
             st.session_state.notes = {"text": text, "images": images}
             st.sidebar.success("PDF processed successfully!")
-            st.session_state.chat_history = []
+            clear_all_state_except_notes()
 
     else:
         if youtube_url:
@@ -46,6 +56,7 @@ if st.sidebar.button("Process Notes"):
                 st.sidebar.success("Transcript extracted successfully!")
                 # Clear chat history when new notes are uploaded
                 st.session_state.chat_history = []
+                st.session_state.generated_quiz = None
             except Exception as e:
                 st.sidebar.error(f"Error: {str(e)}")
 
@@ -101,11 +112,16 @@ with tab2:
         if "generated_quiz" not in st.session_state:
             st.session_state.generated_quiz = None
 
-        num_questions = st.number_input("Number of questions:", min_value=1, max_value=20, value=5)
+        num_questions = st.number_input("Number of questions:", min_value=1, max_value=50, value=5)
 
         if st.button("Generate Quiz"):
-            raw_quiz = generate_quiz(st.session_state.notes, num_questions)
-            st.session_state.generated_quiz = raw_quiz  # store quiz in session state
+            keys_to_delete = [k for k in st.session_state.keys() if re.match(r"q\d+_selected", k) or re.match(r"q\d+_option", k)]
+            for k in keys_to_delete:
+                del st.session_state[k]
+
+            # 📥 Generate new quiz
+            raw_quiz = generate_quiz(st.session_state.notes["text"], st.session_state.notes["images"], num_questions)
+            st.session_state.generated_quiz = raw_quiz
 
         # Display quiz if it exists
         if st.session_state.generated_quiz:
@@ -125,7 +141,7 @@ with tab2:
                 if match:
                     question, opt_a, opt_b, opt_c, opt_d, answer = match.groups()
                     st.markdown(f"**Q{idx}. {question.strip()}**")
-
+                    user_selected_answer = st.session_state.get(f"q{idx}_selected", None)
                     options = {
                         "A": opt_a.strip(),
                         "B": opt_b.strip(),
@@ -133,18 +149,30 @@ with tab2:
                         "D": opt_d.strip()
                     }
 
+                    answer_options = [f"A: {options['A']}", f"B: {options['B']}", f"C: {options['C']}", f"D: {options['D']}"]
+
                     selected = st.radio(
                         f"Your answer for Q{idx}",
-                        [f"A: {options['A']}", f"B: {options['B']}", f"C: {options['C']}", f"D: {options['D']}"],
+                        answer_options,
+                        index=answer_options.index(f"{user_selected_answer}: {options[user_selected_answer]}") if user_selected_answer else None,
                         key=f"q{idx}_option"
                     )
 
-                    with st.expander("Show Answer"):
-                        st.markdown(f"✅ Correct Answer: **{answer}: {options[answer]}**")
-                        if selected.startswith(answer):
-                            st.success("You got it right! 🎉")
-                        else:
-                            st.error("Oops! That's not correct.")
+                    # Save the selected answer to session state
+                    if selected:
+                        selected_letter = selected.split(":")[0]
+                        st.session_state[f"q{idx}_selected"] = selected_letter
+
+                    # Display correct answer and feedback
+                        with st.expander("Show Answer"):
+                            st.markdown(f"✅ Correct Answer: **{answer}: {options[answer]}**")
+                            if selected:
+                                if selected.startswith(answer):
+                                    st.success("You got it right! 🎉")
+                                else:
+                                    st.error("Oops! That's not correct.")
+                            else:
+                                st.warning("Please select an answer first to check if it's correct.")
                 else:
                     st.warning(f"⚠️ Could not parse question {idx} correctly. Please check formatting.")
     else:
