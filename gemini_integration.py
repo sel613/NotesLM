@@ -1,8 +1,7 @@
 # gemini_integration.py
 import google.generativeai as genai
 import io, os
-from dotenv import load_dotenv
-load_dotenv()
+
 import streamlit as st
 
 # Configure with your free API key
