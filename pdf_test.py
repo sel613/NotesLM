@@ -21,4 +21,18 @@ def extract_text_from_pdf(pdf_file):
         page_text = page.extract_text()
         if page_text:
             text += page_text + "\n"
-print(extract_text_from_pdf(pdf_path))
+# print(extract_text_from_pdf(pdf_path))
+
+import fitz  # PyMuPDF
+
+def convert_pdf_to_images(pdf_bytes):
+    doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+    images = []
+    for page in doc:
+        pix = page.get_pixmap()
+        images.append(pix.tobytes("png"))
+    return images
+pdf_bytes = pdf_path.read() 
+images = convert_pdf_to_images(pdf_bytes)
+print(f"Converted {len(images)} pages.")
+images[0].show()  # Opens first page as image

@@ -1,6 +1,7 @@
 from PyPDF2 import PdfReader
-from pdf2image import convert_from_bytes
-import re
+import fitz  # PyMuPDF
+import re, io
+from PIL import Image
 
 # ---------- TEXT EXTRACTION FUNCTION ----------
 def extract_text_from_pdf(pdf_file):
@@ -31,13 +32,16 @@ def convert_pdf_to_images(pdf_file, max_pages=10):
     Returns a list of PIL.Image objects.
     """
     pdf_file.seek(0)
-    content = pdf_file.read()
+    pdf_bytes = pdf_file.read()
 
-    if not content.startswith(b'%PDF'):
-        raise ValueError("Invalid PDF file.")
+    doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+    images = []
 
-    try:
-        images = convert_from_bytes(content, first_page=1, last_page=max_pages)
-        return images
-    except Exception as e:
-        raise RuntimeError(f"PDF to image conversion failed: {e}")
+    for i, page in enumerate(doc):
+        if i >= max_pages:
+            break
+        pix = page.get_pixmap(dpi=200)
+        img = Image.open(io.BytesIO(pix.tobytes("png")))
+        images.append(img)
+
+    return images

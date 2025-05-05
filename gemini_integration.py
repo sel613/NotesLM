@@ -1,12 +1,10 @@
 # gemini_integration.py
 import google.generativeai as genai
 import io, os
-from dotenv import load_dotenv
-load_dotenv()
 import streamlit as st
 
 # Configure with your free API key
-genai.configure(api_key=st.secrets["GEMINI_API"])
+genai.configure(st.secrets['GEMINI_API'])
 
 def chat_with_notes(notes, images, user_query):
     model = genai.GenerativeModel('gemini-2.0-flash')
@@ -38,13 +36,18 @@ def generate_quiz(notes, num_questions=5):
     model = genai.GenerativeModel('gemini-2.0-flash')
     prompt = f"""
     Based on the following notes, create {num_questions} quiz questions with multiple choice answers. 
-    Format each question as:
-    Q1. [question text]
-    A) [option 1]
-    B) [option 2]
-    C) [option 3]
-    D) [option 4]
-    Answer: [correct letter]
+    Follow **this format strictly** for each question:
+    Q1. [Question text]
+    A) [Option A]
+    B) [Option B]
+    C) [Option C]
+    D) [Option D]
+    Answer: A
+
+    Rules:
+    - Always use the exact letters A), B), C), and D) — no dashes or colons.
+    - The answer line must always start with 'Answer:' followed by a space and a capital letter A-D.
+    - Do NOT add explanations or additional commentary.
     
     Notes:
     {notes}

@@ -1,7 +1,7 @@
 import streamlit as st
-from ran_demo.NotesLM.pdf_processor import extract_text_from_pdf, convert_pdf_to_images
-from ran_demo.NotesLM.youtube_processor import get_video_transcript
-from ran_demo.NotesLM.gemini_integration import chat_with_notes, generate_quiz
+from pdf_processor import extract_text_from_pdf, convert_pdf_to_images
+from youtube_processor import get_video_transcript
+from gemini_integration import chat_with_notes, generate_quiz
 import re 
 
 st.title("Smart Notes App with Gemini")
@@ -112,13 +112,20 @@ with tab2:
             questions = st.session_state.generated_quiz.strip().split("\n\n")
 
             for idx, q_block in enumerate(questions, 1):
-                match = re.match(
-                    r"Q\d+\.\s*(.*?)\s+A\)(.*?)\s+B\)(.*?)\s+C\)(.*?)\s+D\)(.*?)\s+Answer:\s+([A-D])",
+                # Optional debug
+                # st.subheader(f"Raw Q{idx}")
+                # st.code(q_block, language="text")
+
+                # Regex to match Gemini's structured format strictly
+                match = re.search(
+                    r"Q\d+\.\s*(.*?)\s+A\)\s*(.*?)\s+B\)\s*(.*?)\s+C\)\s*(.*?)\s+D\)\s*(.*?)\s+Answer:\s*([A-D])",
                     q_block.strip(), re.DOTALL
                 )
+
                 if match:
                     question, opt_a, opt_b, opt_c, opt_d, answer = match.groups()
                     st.markdown(f"**Q{idx}. {question.strip()}**")
+
                     options = {
                         "A": opt_a.strip(),
                         "B": opt_b.strip(),
@@ -139,8 +146,6 @@ with tab2:
                         else:
                             st.error("Oops! That's not correct.")
                 else:
-                    st.warning(f"Could not parse question {idx} correctly.")
+                    st.warning(f"⚠️ Could not parse question {idx} correctly. Please check formatting.")
     else:
         st.warning("Please upload notes first.")
-
-
