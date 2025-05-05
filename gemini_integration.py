@@ -4,7 +4,7 @@ import io, os
 import streamlit as st
 
 # Configure with your free API key
-genai.configure(st.secrets['GEMINI_API'])
+genai.configure(api_key = st.secrets['GEMINI_API'])
 
 def chat_with_notes(notes, images, user_query):
     model = genai.GenerativeModel('gemini-2.0-flash')
